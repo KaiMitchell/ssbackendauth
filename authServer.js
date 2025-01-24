@@ -20,7 +20,7 @@ let clientConfig = {};
 
 app.use(express.json());
 app.use(cors({ 
-    origin: 'http://localhost:5173',
+    origin: 'https://skillswap-wxvl.onrender.com',
     credentials: true 
 }));
 app.use(fileUpload());
