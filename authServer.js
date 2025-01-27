@@ -12,7 +12,7 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const staticFilePath = process.env.NODE_ENV === 'production' ? './dist' : './assets';
+const staticFilePath = '/assets';
 
 const app = express();
 const { Client } = pkg;
@@ -20,7 +20,7 @@ let clientConfig = {};
 
 app.use(express.json());
 app.use(cors({ 
-    origin: 'https://skillswap-wxvl.onrender.com',
+    origin: process.env.NODE_ENV === 'production' ? 'https://skillswap-wxvl.onrender.com' : 'http://localhost:5174',
     credentials: true 
 }));
 app.use(fileUpload());
@@ -556,11 +556,12 @@ app.post('/api/edit-profile', async(req, res) => {
             imgPath = Date.now() + imgFile.name;
             //define path to move file to
             //use date dot now to prevent conflicting file names
-            uploadPath = __dirname + '/assets/' + imgPath;
+            uploadPath = __dirname + staticFilePath + '/' + imgPath;
         
             //use mv to place the file into my assets folder
             imgFile.mv(uploadPath, (err) => {
                 if(err) {
+                    console.log('error uploading file');
                     res.status(500).json({ error: err });
                     return;
                 };
@@ -604,6 +605,8 @@ app.post('/api/edit-profile', async(req, res) => {
         });
     } catch(err) {
         console.error(err);
+        res.status(500).json({ message: 'Unexpected error occured' });
+        return;
     };
 });
 
