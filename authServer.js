@@ -599,7 +599,6 @@ app.post('/api/edit-profile', async(req, res) => {
         const newSocials = await client.query(
             `SELECT * FROM social_links WHERE user_id = (SELECT id FROM users WHERE username = $1)`, [currentUsername]
         );
-        console.log(newSocials.rows);
     
         res.json({ 
             img: `${url}/${imgPath ? imgPath : currentProfilePicture}`,
