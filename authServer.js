@@ -8,7 +8,10 @@ import bcrypt from 'bcrypt';
 import pkg from 'pg';
 import fileUpload from 'express-fileupload';
 
-dotenv.config();            
+dotenv.config();          
+
+//initialize endpoint address
+const url = process.env.NODE_ENV === 'production' ? process.env.AUTH_URL : process.env.VITE_AUTH_URL;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -599,7 +602,7 @@ app.post('/api/edit-profile', async(req, res) => {
         console.log(newSocials.rows);
     
         res.json({ 
-            img: `http://localhost:4000/${imgPath ? imgPath : currentProfilePicture}`,
+            img: `${url}/${imgPath ? imgPath : currentProfilePicture}`,
             newSocials: newSocials.rows,
             newUsername: newUsername || currentUsername          
         });
