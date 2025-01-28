@@ -274,11 +274,9 @@ app.post('/api/register', async(req, res) => {
 
 //login
 app.post('/api/signin', async(req, res) => {
-
     const { username, password } = req.body;
 
     try {
-
         //initialize error object to store incorrect data errors
         let newErrors = {};
     
