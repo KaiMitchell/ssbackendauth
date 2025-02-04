@@ -583,7 +583,9 @@ app.post('/api/edit-profile', async(req, res) => {
             const uploadImage = cloudinary.uploader
                 .upload(uploadPath,
                     { public_id: removedFormatImgPath }
-                ).catch((err) => {
+                ).then((result) => {
+                    console.log(result.secure_url);
+                }).catch((err) => {
                     console.error(err);
                 });
             console.log(uploadImage);
@@ -616,7 +618,7 @@ app.post('/api/edit-profile', async(req, res) => {
         );
     
         res.json({ 
-            img: `${url}/${imgPath ? imgPath : currentProfilePicture}`,
+            img: imgPath ? imgPath : currentProfilePicture,
             newSocials: newSocials.rows,
             newUsername: newUsername || currentUsername          
         });
