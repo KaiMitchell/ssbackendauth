@@ -7,6 +7,7 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import pkg from 'pg';
 import fileUpload from 'express-fileupload';
+import { v2 as cloudinary} from 'cloudinary';
 
 dotenv.config();          
 
@@ -23,7 +24,7 @@ let clientConfig = {};
 
 app.use(express.json());
 app.use(cors({ 
-    origin: process.env.NODE_ENV === 'production' ? 'https://skillswap-wxvl.onrender.com' : 'http://localhost:5174',
+    origin: process.env.NODE_ENV === 'production' ? 'https://skillswap-wxvl.onrender.com' : 'http://localhost:5173',
     credentials: true 
 }));
 app.use(fileUpload());
@@ -47,6 +48,12 @@ const client = new Client(clientConfig);
 client.connect()
     .then(() => console.log('Connected to the database'))
     .catch(err => console.error('Database connection failed:', err));
+
+cloudinary.config({
+    cloud_name: 'dmxg3taha',
+    api_key: '264187825832261',
+    api_secret: '_BazoZWF-ka3HerlTpBLBqhwD2M'
+});
 
 function generateToken(user) {
     return jwt.sign({ user: user }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
@@ -555,11 +562,12 @@ app.post('/api/edit-profile', async(req, res) => {
         if(req.files && req.files.imgFile) {
             imgFile = req.files.imgFile;
             imgPath = Date.now() + imgFile.name;
-            //define path to move file to
-            //use date dot now to prevent conflicting file names
+            const removedFormatImgPath = imgPath.slice(0, imgPath.lastIndexOf('.'));
+            // //define path to move file to
+            // //use date dot now to prevent conflicting file names
             uploadPath = __dirname + staticFilePath + '/' + imgPath;
         
-            //use mv to place the file into my assets folder
+            // //use mv to place the file into my assets folder
             imgFile.mv(uploadPath, (err) => {
                 if(err) {
                     console.log('error uploading file');
@@ -568,8 +576,17 @@ app.post('/api/edit-profile', async(req, res) => {
                 };
             });
     
-            //set update query to add img url into database
-            usersUpdates.push(`profile_picture = '${imgPath}'`);
+            // //set update query to add img url into database
+            usersUpdates.push(`profile_picture = '${removedFormatImgPath}'`);
+
+            //upload img to cloudinary
+            const uploadImage = cloudinary.uploader
+                .upload(uploadPath,
+                    { public_id: removedFormatImgPath }
+                ).catch((err) => {
+                    console.error(err);
+                });
+            console.log(uploadImage);
         };
     
         //updates for users table
@@ -630,7 +647,7 @@ app.put('/api/update-priority-skill', async(req, res) => {
     } catch(err) {
         console.error(err);
     };
-});
+}); 
 
 app.delete('/api/unprioritize-skill', async(req, res) => {
     const { user, skill, isToLearn } = req.body;
