@@ -617,7 +617,7 @@ app.post('/api/edit-profile', async(req, res) => {
         );
     
         res.json({ 
-            img: imgPath ? imgPath : currentProfilePicture,
+            img: imgPath ? uploadedImageUrl : currentProfilePicture,
             newSocials: newSocials.rows,
             newUsername: newUsername || currentUsername          
         });
