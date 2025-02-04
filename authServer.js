@@ -559,6 +559,8 @@ app.post('/api/edit-profile', async(req, res) => {
             };
         };
 
+        let uploadedImageUrl = null;
+
         if(req.files && req.files.imgFile) {
             imgFile = req.files.imgFile;
             imgPath = Date.now() + imgFile.name;
@@ -566,29 +568,26 @@ app.post('/api/edit-profile', async(req, res) => {
             // //define path to move file to
             // //use date dot now to prevent conflicting file names
             uploadPath = __dirname + staticFilePath + '/' + imgPath;
-        
-            // //use mv to place the file into my assets folder
-            imgFile.mv(uploadPath, (err) => {
-                if(err) {
-                    console.log('error uploading file');
-                    res.status(500).json({ error: err });
-                    return;
-                };
-            });
-    
-            // //set update query to add img url into database
-            usersUpdates.push(`profile_picture = '${removedFormatImgPath}'`);
 
-            //upload img to cloudinary
-            const uploadImage = cloudinary.uploader
-                .upload(uploadPath,
-                    { public_id: removedFormatImgPath }
-                ).then((result) => {
-                    console.log(result.secure_url);
-                }).catch((err) => {
-                    console.error(err);
+            await new Promise((resolve, reject) => {
+                imgFile.mv(uploadPath, (err) => {
+                    if(err) {
+                        console.log('error uploading file');
+                        reject(err);
+                    } else {
+                        resolve();
+                    };
                 });
-            console.log(uploadImage);
+            });
+
+            try {
+                const result = await cloudinary.uploader.upload(uploadPath, { public_id: removedFormatImgPath });
+                uploadedImageUrl = result.secure_url;
+                console.log('Cloudinary Upload URL:', uploadedImageUrl);
+                usersUpdates.push(`profile_picture = '${uploadedImageUrl}'`);
+            } catch(err) {
+                console.error('Cloudinary upload error: ', err);
+            };
         };
     
         //updates for users table
