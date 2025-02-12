@@ -11,9 +11,6 @@ import { v2 as cloudinary} from 'cloudinary';
 
 dotenv.config();          
 
-//initialize endpoint address
-const url = process.env.NODE_ENV === 'production' ? process.env.AUTH_URL : process.env.VITE_AUTH_URL;
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const staticFilePath = '/assets';
@@ -106,9 +103,6 @@ app.get('/api/unselected-skills', async(req, res) => {
         };
 });
 
-//delete a skill from skills list
-//whether the skill is to learn or teach does not matter
-//their can only be one instance of a skill assign to a user
 app.delete('/api/remove-skill', async(req, res) => {
     const { username, skill} = req.query;
 
@@ -258,16 +252,13 @@ app.post('/api/register', async(req, res) => {
         };
 
         const hashedPassword = await bcrypt.hash(password, 12);
-
         //insert new user into postgreSQL database
         await client.query(`
             INSERT INTO users(username, email, password)
             VALUES($1, $2, $3)
         `, [username, email, hashedPassword]);
-
         //generate access token to pass to client side
         const accessToken = generateToken(username);
-
         res.status(201).json({ 
             message: `Welcome to Skill Swap ${username}`,
             accessToken: accessToken,
@@ -282,20 +273,16 @@ app.post('/api/register', async(req, res) => {
 //login
 app.post('/api/signin', async(req, res) => {
     const { username, password } = req.body;
-
     try {
         //initialize error object to store incorrect data errors
         let newErrors = {};
-    
         //retrieve requested username from the postgreSQL db
         const existingUser = await client.query(
             `
              SELECT * FROM users u WHERE u.username = $1
             `, [username]
         );
-
         const user = existingUser.rows[0];
-
         if(!user) {
             newErrors.username = 'Incorrect username';
         } else {
@@ -304,13 +291,11 @@ app.post('/api/signin', async(req, res) => {
                 newErrors.password = 'Incorrect password';
             };
         };
-
         console.log(newErrors)
         if(Object.keys(newErrors).length > 0) {
             res.status(401).json({ newErrors });
             return;
         };  
-
         await client.query(
             `
             SELECT ARRAY_AGG(DISTINCT username) sent_requests FROM users u
@@ -318,22 +303,7 @@ app.post('/api/signin', async(req, res) => {
             WHERE mr.u_id2 = u.id
             `, [username]
         );
-
-        //generate access token and store refresh token in an httpOnly cookie
         const accessToken = generateToken(username);
-
-        //BLOCKED
-        // const refreshToken = generateRefreshToken(username);
-        // await storeRefreshToken(refreshToken, username);
-        //assign refresh token
-        // res.cookie('refreshToken', refreshToken, { 
-        //     httpOnly: true,
-        //     secure: false,
-        //     sameSite: 'None',
-        //     path: '/'
-        // });
-        //send user details and access token in response
-
         res.status(200).json({ ...user, accessToken: accessToken });
     } catch(err) {
         console.error('error!: ', err);
@@ -361,7 +331,6 @@ app.post('/api/signout', async(req, res) => {
 //get matched profile data
 app.get('/api/profile', authenticateToken, async(req, res) => {
     const selectedUser = req.query.selectedUser;
-
     try {
         // Return all necessary details for selected matched profile
         const result = await client.query(
@@ -387,16 +356,13 @@ app.get('/api/profile', authenticateToken, async(req, res) => {
                 u.description, 
                 u.username
         `, [selectedUser]);
-
         //return all platform links associated with the selected user
         const socials = await client.query(`
             SELECT platform, url FROM social_links
             WHERE user_id = (SELECT id FROM users WHERE username = $1)
             `, [selectedUser]
         );
-
         const profileData = result.rows[0];
-
         //ensure arrays do not return null
         for(const prop in profileData) {
             if(prop === 'skills_to_learn' || prop === 'skills_to_teach') {
@@ -405,7 +371,6 @@ app.get('/api/profile', authenticateToken, async(req, res) => {
                 };
             };
         };
-
         //append  socials results to response body inside the socials key
         res.status(200).json({ profileData: { ...profileData, socials: socials.rows } });
     } catch(err) {
@@ -634,16 +599,13 @@ app.put('/api/update-priority-skill', async(req, res) => {
         skill,
         isToLearn, //determines if setting a priority skill to learn or teach
     } = req.body;
-    
     try {
         const priorityType = isToLearn ? 'skill_to_learn_priority_id' : 'skill_to_teach_priority_id';
-
         await client.query(
             `UPDATE users_skills
              SET ${priorityType} = (SELECT id FROM skills WHERE name = $2)
              WHERE user_id = (SELECT id FROM users WHERE username = $1)`, [user, skill]
         );
-
         res.status(200).json({ message: 'successfully updated' });
     } catch(err) {
         console.error(err);
